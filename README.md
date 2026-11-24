@@ -11,7 +11,7 @@ It is a plugin marketplace (`devkit`) with one plugin (`devkit`).
 |---|---|---|
 | `new-project` | Starting a fresh project: reads the gold reference, asks the decisions, sorts the patterns into now / later / not applicable, scaffolds `CLAUDE.md`, `RESUME.md`, a plan with a status table and the GitHub files. Later: "how does the reference handle X?" | nothing |
 | `checkpoint` | Context is filling up, or you are about to clear it: brings memory and the plan's status table up to date, then prints the resume prompt for the fresh session | nothing |
-| `watched-walk` | A UI bug or change request is fixed: proves it with a scripted walk of the issue's own criteria, a control run that must go red, then a headed run you watch. Comes with a runnable walk template | Node 20+, `@playwright/test` 1.63+ in the project, Chrome or Edge |
+| `watched-walk` | A UI bug or change request is fixed: proves it with a scripted walk of the issue's own criteria, a control run that must go red, then a headed run you watch. A command-line program is walked the same way in a real terminal in the browser. Comes with a runnable walk template | Node 20+, `@playwright/test` 1.65+ in the project, Chrome or Edge; for a terminal walk also `@xterm/xterm`, `@xterm/addon-fit`, `node-pty` |
 | `playwright-cli` | Driving a browser from the terminal: snapshots, clicks, screenshots, tests | Node 20+, `npm install -g @playwright/cli@0.1.25` |
 | `live-demo-site` | A training or demo site where the real app does the work live, step by step, under a control panel | Node 20+, pnpm |
 

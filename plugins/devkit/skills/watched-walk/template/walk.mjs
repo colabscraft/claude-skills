@@ -1,7 +1,9 @@
 // walk.mjs - a minimal watched-walk runner (devkit `watched-walk` skill).
 //
 // Copy this folder into the project (for example qa/walk/), install
-// @playwright/test 1.63+ in the project, write sections, run them with run.mjs.
+// @playwright/test 1.65+ in the project, write sections, run them with run.mjs.
+// A command-line program has no page of its own: terminal.mjs makes the page a
+// real terminal, and this runner draws the same narration over it.
 // What it does, in the skill's words:
 //   - narration drawn OVER the page with page.screencast (never in the DOM):
 //     a chapter card per case, a step caption bottom-left, a verdict card
@@ -26,7 +28,7 @@ export { expect };
 
 export class Walk {
   /**
-   * @param o.base     the app's base URL (http://localhost:4200/)
+   * @param o.base     the app's base URL (http://localhost:4200/); none for a terminal walk
    * @param o.headed   a visible browser; implies narrate
    * @param o.narrate  draw the narration (also headless, to check it)
    * @param o.pace     1 = normal; 2 = twice as slow for the watcher
@@ -35,7 +37,7 @@ export class Walk {
    * @param o.channel  'chrome' | 'msedge' | undefined (Playwright's own Chromium)
    */
   constructor(o) {
-    this.base = o.base.replace(/\/?$/, '/');
+    this.base = o.base ? o.base.replace(/\/?$/, '/') : ''; // a terminal walk has no base URL
     this.headed = !!o.headed;
     this.narrate = this.headed || !!o.narrate;
     this.pace = Number(o.pace ?? 1);
@@ -187,6 +189,7 @@ export class Walk {
       // A crash is a red verdict, so a control run still SCORES.
       r.verdicts.push({ clause: 'the case ran to the end', verdict: 'fail', error: crash });
       const page = this.seats.values().next().value?.page;
+      if (page) await page.screenshot({ path: join(this.runDir, `${r.id}-CRASH.png`) }).catch(() => {}); // what the screen showed
       if (page) await this.card(page, 'fail', 'the case ran to the end', crash.split('\n')[0]);
     }
     if (r.verdicts.length === 0) r.verdicts.push({ clause: 'at least one check', verdict: 'fail', error: 'the case checked nothing' });

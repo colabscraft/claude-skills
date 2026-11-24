@@ -43,7 +43,7 @@ If the folder cannot be found on disk, read the same files from
 | Q1 | Name, one-line purpose, who it is for | the `CLAUDE.md` header |
 | Q2 | Stack: front end, back end, database (recommend what the user already knows) | commands, which A-patterns apply |
 | Q3 | Who files issues and who decides scope | stakeholders, the issue flow (W7) |
-| Q4 | Does it have a browser UI? Several organisations or customers in one install? Roles? | walks (W5, W6), tenancy (A6-A8), permissions (A5) |
+| Q4 | Does it have a browser UI, or a command line people type into? Several organisations or customers in one install? Roles? | walks (W5, W6; a CLI is walked in a terminal), tenancy (A6-A8), permissions (A5) |
 | Q5 | Where it runs: local only for now, a staging server, a customer's machine | releases (W8-W10), service reports (W13, W14) |
 | Q6 | UI language (Thai-first?), the GitHub owner/repo and board | the `CLAUDE.md` GitHub section |
 

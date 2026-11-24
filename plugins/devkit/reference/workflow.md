@@ -93,7 +93,7 @@ support calls. Skipping the manual once made every screenshot in it stale after 
 ## W6. The walk quotes the issue and needs a control run
 
 **Rule.** Each acceptance criterion of an issue is a case in a scripted browser walk, quoting the reporter's
-own words. The walk runs headless until green twice, then **against the pre-fix code, where it must go red**
+own words; for a command-line program the browser page is a real terminal running it. The walk runs headless until green twice, then **against the pre-fix code, where it must go red**
 (the control), then headed while the developer or owner watches.
 
 **Why.** A walk that cannot fail proves nothing. A control that stays green means the fix is unproven, however
@@ -101,7 +101,7 @@ good the green run looks.
 
 **How.** `/devkit:watched-walk` carries the method and a runnable template (`skills/watched-walk/template/`):
 the narration drawn over the page, verdict cards, the summary, and the scripted control swap that restores the
-files whatever happens.
+files whatever happens; `terminal.mjs` makes the page a real terminal for a command-line program.
 
 **Check.** Every fix that reached users has a walk result AND a red control result on record.
 

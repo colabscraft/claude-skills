@@ -1,6 +1,6 @@
 ---
 name: watched-walk
-description: Prove a UI bug/CR fix with a scripted walk through the issue's own acceptance criteria - a headless dry run green twice, a CONTROL run against the original code that must go red, then a headed run the user watches, driven on the real screen with a narration drawn over the page (bottom-left step caption, a top-centre verdict card that clears, a summary card; one issue per round, briefed first on the problem, the fix and what to expect) - before anything is deployed. Use when finishing a bug or CR fix that changes what a person sees or does in a browser, when the user says "walk it", "headed run", "control run", "prove the fix", or when about to reply to a tester/reporter that a fix is ready.
+description: Prove a UI bug/CR fix with a scripted walk through the issue's own acceptance criteria - a headless dry run green twice, a CONTROL run against the original code that must go red, then a headed run the user watches, driven on the real screen with a narration drawn over the page (bottom-left step caption, a top-centre verdict card that clears, a summary card; one issue per round, briefed first on the problem, the fix and what to expect) - before anything is deployed. A command-line program is walked the same way in a real terminal shown in the browser (xterm.js on a real shell, Linux, macOS and Windows). Use when finishing a bug or CR fix that changes what a person sees or does in a browser or types in a terminal, when the user says "walk it", "headed run", "control run", "prove the fix", "show the CLI working", or when about to reply to a tester/reporter that a fix is ready.
 ---
 
 # The watched walk
@@ -11,10 +11,11 @@ caption at the bottom-left, a ✅/❌ card per acceptance criterion quoting the 
 then gets out of the way - first headless for the machine, then **headed, on the user's screen,
 while they watch**. 🏆 A runnable template comes with it: `template/` beside this file (§13).
 
-**Applies to:** a UI bug/CR fix, before deploy or before replying to whoever reported it.
-**Does NOT apply to:** CLI/library work, API-only changes with no screen, compliance
-sweeps, infrastructure runbooks. If the repo has no browser, stop and say so - do not
-invent a walk.
+**Applies to:** a UI bug/CR fix, before deploy or before replying to whoever reported it; and a
+command-line program's fix or feature, walked in a real terminal in the browser (§15).
+**Does NOT apply to:** library work with no program a person runs, API-only changes with no
+screen, compliance sweeps, infrastructure runbooks. If there is neither a screen nor a command a
+person types, stop and say so - do not invent a walk.
 
 ## Provenance, and why this is a skill at all
 
@@ -278,15 +279,21 @@ been walked. **This skill is the method. That file is the machine.**
 
 | File | What it is |
 |---|---|
-| `walk.mjs` | The runner: the narration of §3, `step`, `click`, `type`, `check` (screenshot first, then the card), `wait` (⏳ with a reason), a crash scored as ❌, the summary card and `results.json` |
-| `run.mjs` | Runs a section: `--base` or `--serve`, `--headed`, `--narrate`, `--pace`, `--label`, `--only`; refuses to start when a quote is not in the issue (§6) |
-| `control.mjs` | §4 scripted: swaps the fix's files to the pre-fix commit, waits for the dev server's rebuild line, runs labelled `control`, restores on any exit; exit 0 only when the control went red |
+| `walk.mjs` | The runner: the narration of §3, `step`, `click`, `type`, `check` (screenshot first, then the card), `wait` (⏳ with a reason), a crash scored as ❌ with a screenshot, the summary card and `results.json` |
+| `run.mjs` | Runs a section: `--base` or `--serve` (a web app) or the section's `terminal` (a program, `--rev` for an earlier commit's whole tree), `--headed`, `--narrate`, `--pace`, `--label`, `--only`; refuses to start when a quote is not in the issue, or in the plan files a section names (§6) |
+| `control.mjs` | §4 scripted: swaps the fix's files to the pre-fix commit (or, for a program, runs that commit's whole tree), waits for the dev server's rebuild line, runs labelled `control`, restores on any exit; `--expect-red` names the clauses that must go red; exit 0 only when they did |
+| `terminal.mjs` | §15: the page is a real terminal (xterm.js) on a real shell (node-pty), the exit code in the prompt, no listening port |
 | `sections/example.mjs` + `example/index.html` | Two cases against a tiny page, presence before absence |
-| `README.md` | Commands, exit codes, and "make it yours": sign-in, seats, arrange/cleanup, reading the data store |
+| `sections/example-cli.mjs` + `example/cli.mjs` | Three cases against a tiny program: typed commands, an interactive question, verdicts from its data file |
+| `README.md` | Commands, exit codes, and "make it yours": sign-in, seats, arrange/cleanup, reading the data store, a program's build |
 
 Copy the folder into the project (`qa/walk/`), run the example, then replace it with the project's sections.
 Proven on 2026-11-24 with Playwright 1.63 and Chrome: green twice headless, the narration drawn, a control
 on the pre-fix commit red on exactly the fixed clauses, a control on unchanged code reported "not yet proven".
+The terminal half, again on 2026-11-24 (Playwright 1.65, Chrome, Linux): the example program green twice
+headless and with the narration drawn; controls at the pre-fix commit, whole tree and file swap, red on
+exactly the fixed case (`--expect-red`); a control on unchanged code "not yet proven"; the web example and a
+web control unchanged.
 
 ## 14. On Windows
 
@@ -297,3 +304,44 @@ on the pre-fix commit red on exactly the fixed clauses, a control on unchanged c
 - Headed Chrome, `--window-position` and the screencast overlays behave the same as elsewhere.
 - Commit a `.gitattributes` with `* text=auto eol=lf` so scripts and fixtures do not pick up
   CRLF on checkout and fail a byte comparison.
+- A terminal walk (§15) uses ConPTY. A fresh laptop has Windows PowerShell 5.1 only, so the
+  terminal uses `pwsh.exe` when it is on the PATH, else `powershell.exe`; prove the 5.1 path in CI
+  (`windows-latest` with `WALK_SHELL=powershell.exe`).
+
+## 15. A command-line program: the page is a terminal
+
+Measured 2026-11-24 on a Go CLI: two sections, 25 clauses, two controls proven, headed and watched,
+green in CI on Linux and on Windows in PowerShell 7 and Windows PowerShell 5.1. Everything above holds
+unchanged (the loop, the brief, the control law, the verdicts, the evidence). Only the page differs.
+
+**The machine** (`template/terminal.mjs`): the page is xterm.js; behind it node-pty runs a real shell on
+a real terminal session (forkpty on Linux and macOS, ConPTY on Windows) with the program under test first
+on its PATH. The program sees a terminal, not a pipe: its menus, questions, colours and progress lines
+behave as in any terminal app. The page's files come from `page.route` and keystrokes go back through
+`exposeFunction`: **no listening port**, nothing else on the machine can reach the shell. The prompt
+carries the last exit code, `[exit 0] tool $`, so the watcher sees it and the walk reads it.
+
+- 🔴 **Type the command, as a person would.** Visible keystrokes into the terminal, the program's own
+  questions answered on screen. Running it in a child process and painting the output is the terminal
+  version of a background `fetch` (§2): the screen would not be the proof.
+- **Verdicts from behind the screen**, as for a web app: the files the command wrote, a manifest it
+  keeps, git itself, a byte comparison with a reference file; the exit code from the prompt. The screen
+  text is for what a person reads: compare it with white space removed, since terminals wrap long lines
+  differently (ConPTY breaks them itself).
+- 🔴 **A command that asks a question waits for ever.** Anything the walk types either passes the flags
+  that answer it or answers it on screen (`start`, `waitFor`, `answer`, `done`). A step that times out
+  reports "still running or waiting for input", never a hang.
+- 🔴 **The screen text ends at its last character.** The terminal's unused rows are empty lines: an
+  offset measured with them in points past the next output, and a wait never sees the next question.
+  `terminal.mjs` trims them; keep that if you change it.
+- **The control runs a whole tree** (`--rev`): that commit is unpacked into the run folder and the
+  program built there, so the working tree is never touched. Local data git does not hold is linked in
+  (`link`). 🔴 **Never delete through that link**: unlink it first, and check afterwards that the real
+  folder is still there. A path the program prints is relative to the tree under test, which in a control
+  is the unpacked one, not the repository.
+- **Heavy outputs** (a run folder of hundreds of MB) go when every verdict passed and stay when one
+  failed, to diagnose; screenshots show file names, so `runs/` stays out of git.
+- Windows: a fresh laptop has Windows PowerShell 5.1 only, which has no `cd -` (use `pushd`/`popd`) and
+  no PSReadLine `-PredictionSource`. Linux: node-pty compiles and needs `g++`.
+- The step caption sits over the bottom-left of the page: the terminal stops 112 px above the bottom, so
+  the prompt line is never under it.
