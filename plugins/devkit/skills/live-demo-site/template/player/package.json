@@ -1,0 +1,11 @@
+{
+  "name": "demo-site-player",
+  "private": true,
+  "description": "The demo site's live player (live-demo-site skill), bundled for the browser. NOT part of the app: its own package, never the app's dependencies.",
+  "type": "module",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/user-event": "^14.6.7",
+    "esbuild": "^0.28.2"
+  }
+}

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ศูนย์ฝึกอบรม</title>
+<link rel="icon" href="brand/mark.svg" type="image/svg+xml">
+<!--
+  The demo site's LIVE player (live-demo-site skill): the real app (APP path,
+  this origin) fills the whole window, and the topic's own script (features/)
+  drives it in this browser - real clicks and typing, a drawn cursor, the
+  step's caption in the panel. The panel floats on top and can be moved or
+  folded away; the topics and the steps open as drawers. player.js is built by
+  player/build.mjs from the project's features and demo.config.mjs; nothing
+  here is part of the app. Light theme always. Thai text: translate here and
+  in player/src/main.mjs for another language.
+-->
+<style>
+  /* The APP'S OWN font, copied into fonts/ by the build (a missing file falls back quietly). */
+  @font-face { font-family: 'App Font'; font-weight: 400; src: url('fonts/app-400.woff2') format('woff2'); font-display: swap; }
+  @font-face { font-family: 'App Font'; font-weight: 500; src: url('fonts/app-500.woff2') format('woff2'); font-display: swap; }
+  @font-face { font-family: 'App Font'; font-weight: 700; src: url('fonts/app-700.woff2') format('woff2'); font-display: swap; }
+  :root {
+    color-scheme: light;
+    --brand: #0e8c9e; --brand-dark: #0a6e7d; --brand-deep: #08515e;
+    --bg: #e6eef0; --card: #ffffff; --ink: #14272b; --muted: #5b7176; --line: #d7e3e5;
+    --chip: #e3f3f5; --chip-ink: #0a6e7d; --now: #fff4d6; --now-line: #f0b400;
+    --shadow: 0 10px 34px rgba(8, 40, 46, .22), 0 2px 6px rgba(8, 40, 46, .12);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: var(--bg); color: var(--ink); font: 16px/1.5 'App Font', 'Noto Sans Thai', system-ui, sans-serif; }
+  button, select { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+  svg.i { width: 22px; height: 22px; fill: currentColor; flex: none; }
+
+  /* The playground: every pixel the browser gives. */
+  #stage { position: fixed; inset: 0; overflow: hidden; }
+  #stage.phone { background: radial-gradient(circle at 50% 40%, #d4e6e9, #b9d2d6); }
+  #app { position: absolute; left: 0; top: 0; border: 0; background: #fff; transform-origin: 0 0; }
+  #stage.phone #app { border-radius: 28px; box-shadow: 0 0 0 10px #1d2b2e, 0 18px 50px rgba(0,0,0,.35); }
+  #glass { position: absolute; inset: 0; cursor: default; }
+
+  /* Drawn over the frame: the cursor, rings, notes, covers. */
+  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 20; }
+  #cursor { position: absolute; left: 0; top: 0; width: 30px; height: 30px; transform: translate(-100px, -100px);
+    transition-property: transform; transition-timing-function: cubic-bezier(.35,.1,.25,1); filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+  #cursor .pulse { position: absolute; left: -16px; top: -16px; width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid #f0b400; opacity: 0; }
+  #cursor.click .pulse { animation: pulse .5s ease-out; }
+  @keyframes pulse { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+  .ring { position: absolute; border: 3px solid #f0b400; border-radius: 10px; box-shadow: 0 0 0 4000px rgba(0,0,0,.16); transition: opacity .2s; }
+  .cover-mark { position: absolute; background: #eef6f7; color: #0a6e7d; border: 1px solid #9fd3da; border-radius: 8px;
+    display: flex; align-items: center; padding: 0 12px; font-size: 15px; overflow: hidden; white-space: nowrap; }
+  .note { position: absolute; max-width: min(460px, 40vw); background: #fff8e1; color: #4a3800; border: 2px solid #f0b400;
+    padding: 10px 16px; border-radius: 12px; font-size: 18px; line-height: 1.5; box-shadow: var(--shadow); }
+  .note.phone { max-width: 360px; }
+
+  /* "กำลังเตรียม..." while a topic's trip is set up or a step is re-run. */
+  #cover { position: fixed; inset: 0; z-index: 25; display: grid; place-content: center; justify-items: center; gap: 10px;
+    background: rgba(230, 238, 240, .92); text-align: center; }
+  #cover .t { font-size: 22px; font-weight: 700; color: var(--brand-deep); }
+  #cover .s { color: var(--muted); min-height: 1.5em; }
+  .spinner { width: 44px; height: 44px; border-radius: 50%; border: 4px solid #c9dfe3; border-top-color: var(--brand); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Cards: welcome, a topic's title, its end, a failure. */
+  #card-wrap { position: fixed; inset: 0; z-index: 26; display: grid; place-items: center; background: rgba(20, 39, 43, .28); padding: 16px; }
+  #card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 26px 28px; width: min(560px, 100%); }
+  #card h2 { margin: 0 0 4px; font-size: 24px; }
+  #card .role { display: inline-block; margin: 4px 0 10px; }
+  #card p { margin: 6px 0; color: var(--muted); }
+  #card .err { font-size: 13px; color: #8a2a1d; background: #fdeeea; border-radius: 8px; padding: 8px 10px; margin-top: 10px; word-break: break-word; }
+  #card .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  #card .actions .btn { white-space: normal; text-align: left; }
+  .brandline { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .brandline img { width: 44px; height: 44px; }
+  .brandline .s { font-size: 14px; color: var(--muted); }
+
+  .btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--card); border-radius: 12px;
+    padding: 8px 14px; cursor: pointer; text-decoration: none; color: var(--ink); white-space: nowrap; }
+  .btn:hover { border-color: var(--brand); }
+  .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn.primary:hover { background: var(--brand-dark); }
+  .chip { background: var(--chip); color: var(--chip-ink); border-radius: 999px; padding: 2px 12px; font-size: 14px; font-weight: 500; }
+
+  /* The control panel: movable, foldable, never in the way for long. */
+  #panel { position: fixed; z-index: 30; left: 16px; bottom: 16px; width: min(560px, calc(100vw - 32px)); background: var(--card);
+    border-radius: 18px; box-shadow: var(--shadow); border: 1px solid var(--line); user-select: none; transition: opacity .25s; }
+  #panel.see-through { opacity: .2; }
+  #panel .bar { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; cursor: grab; border-bottom: 1px solid var(--line); }
+  #panel .bar:active { cursor: grabbing; }
+  #panel .where { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  #panel .where .n { color: var(--muted); font-weight: 400; margin-right: 6px; }
+  .ib { display: inline-grid; place-items: center; width: 40px; height: 40px; border: 1px solid transparent; background: transparent;
+    border-radius: 10px; cursor: pointer; color: var(--ink); padding: 0; }
+  .ib:hover { background: var(--chip); }
+  .ib:disabled { opacity: .35; cursor: default; background: transparent; }
+  .caption { padding: 10px 16px 4px; }
+  .caption .k { color: var(--muted); font-size: 14px; }
+  .caption .t { font-size: 21px; font-weight: 700; line-height: 1.35; }
+  .caption .d { font-size: 17px; color: #2e4a50; margin-top: 2px; }
+  .caption .hold { margin-top: 8px; display: inline-block; background: var(--now); border: 1px solid var(--now-line); border-radius: 8px; padding: 3px 10px; font-size: 14px; }
+  .controls { display: flex; align-items: center; gap: 4px; padding: 4px 10px 8px; }
+  .controls .play { width: auto; padding: 0 18px; gap: 6px; background: var(--brand); color: #fff; font-weight: 500; min-width: 130px; display: inline-flex; align-items: center; justify-content: center; }
+  .controls .play:hover { background: var(--brand-dark); }
+  .controls .sep { flex: 1; }
+  .settings { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 14px 12px; border-top: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+  .settings label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .settings select { border: 1px solid var(--line); border-radius: 8px; padding: 2px 6px; background: var(--card); }
+  .settings a { color: var(--brand-dark); }
+  .zoom { display: inline-flex; align-items: center; gap: 2px; }
+  .zoom .ib { width: 32px; height: 32px; font-size: 13px; font-weight: 700; }
+  #panel.mini { width: auto; }
+  #panel.mini .caption, #panel.mini .settings, #panel.mini .controls, #panel.mini .full-only { display: none; }
+  #panel.no-settings .settings { display: none; }
+  #settingsBtn[aria-pressed="true"] { background: var(--chip); }
+  #panel:not(.mini) .mini-only { display: none; }
+  #panel .mini-step { font-size: 14px; color: var(--muted); white-space: nowrap; }
+
+  /* Drawers. */
+  #scrim { position: fixed; inset: 0; z-index: 40; background: rgba(20, 39, 43, .3); }
+  .drawer { position: fixed; z-index: 41; top: 0; bottom: 0; width: min(420px, 92vw); background: var(--card); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; transition: transform .22s ease; }
+  .drawer.left { left: 0; transform: translateX(-104%); }
+  .drawer.right { right: 0; transform: translateX(104%); }
+  .drawer.open { transform: none; }
+  .drawer header { display: flex; align-items: center; gap: 8px; padding: 14px 12px 10px 18px; border-bottom: 1px solid var(--line); }
+  .drawer header h2 { margin: 0; font-size: 19px; flex: 1; }
+  .drawer .body { overflow: auto; padding: 10px 12px 18px; }
+  .roles { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 4px 8px; }
+  .roles button { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 12px; font-size: 14px; cursor: pointer; }
+  .roles button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .group { margin: 14px 6px 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .item { display: block; width: 100%; text-align: left; border: 1px solid transparent; background: transparent; border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+  .item:hover { background: var(--chip); }
+  .item[aria-current="true"] { background: var(--chip); border-color: var(--brand); }
+  .item .n { color: var(--muted); font-size: 13px; }
+  .item .t { display: block; font-weight: 500; }
+  .item .m { display: block; font-size: 13px; color: var(--muted); }
+  .step { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: baseline; }
+  .step .n { font-variant-numeric: tabular-nums; text-align: right; }
+  .step[aria-current="true"] { background: var(--now); border-color: var(--now-line); }
+  .step.done .t { color: var(--muted); }
+  .hint { font-size: 13px; color: var(--muted); margin: 14px 6px 0; }
+  @media (max-width: 640px) {
+    #panel { left: 8px; bottom: 8px; width: calc(100vw - 16px); }
+    .caption .t { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <iframe id="app" title="ระบบที่ใช้ฝึกอบรม" src="about:blank"></iframe>
+  <div id="glass" hidden></div>
+</div>
+<div id="fx" aria-hidden="true">
+  <div id="cursor"><div class="pulse"></div>
+    <svg viewBox="0 0 30 30" width="30" height="30"><path d="M3 2 L3 24 L9 18.5 L13 27.5 L17 25.8 L13 17 L21 17 Z" fill="#fff" stroke="#14272b" stroke-width="1.8" stroke-linejoin="round"/></svg>
+  </div>
+</div>
+<div id="cover" hidden><div class="spinner"></div><div class="t" id="coverTitle">กำลังเตรียม...</div><div class="s" id="coverSay"></div></div>
+<div id="card-wrap" hidden><div id="card" role="dialog" aria-modal="true" aria-labelledby="cardTitle"></div></div>
+
+<section id="panel" aria-label="แผงควบคุมการฝึกอบรม">
+  <div class="bar" id="grip">
+    <button type="button" class="ib" id="topicsBtn" title="หัวข้อทั้งหมด (T)" aria-label="หัวข้อทั้งหมด" data-icon="list"></button>
+    <button type="button" class="ib mini-only" id="playMini" aria-label="เล่น / หยุดชั่วคราว" data-icon="play"></button>
+    <div class="where"><span class="n" id="topicNo"></span><span id="topicTitle">ศูนย์ฝึกอบรม</span></div>
+    <span class="mini-step mini-only" id="stepMini"></span>
+    <span class="chip full-only" id="roleChip" hidden></span>
+    <button type="button" class="ib" id="fullBtn" title="เต็มจอ (F)" aria-label="เต็มจอ" data-icon="full"></button>
+    <button type="button" class="ib" id="miniBtn" title="ย่อแผงควบคุม (H)" aria-label="ย่อแผงควบคุม" data-icon="fold"></button>
+  </div>
+  <div class="caption" aria-live="polite">
+    <div class="k" id="stepNo">เลือกหัวข้อเพื่อเริ่ม</div>
+    <div class="t" id="stepTitle">ดูระบบจริงทำงานทีละขั้น</div>
+    <div class="d" id="stepDetail">ระบบทำทุกขั้นให้ดูบนหน้าจอนี้ หยุด เล่นต่อ หรือย้อนกลับได้ทุกเมื่อ</div>
+    <div class="hold" id="holdHint" hidden>หยุดรอ: กด "เล่นต่อ" เพื่อทำขั้นนี้</div>
+  </div>
+  <div class="controls">
+    <button type="button" class="ib" id="prevF" title="หัวข้อก่อนหน้า (P)" aria-label="หัวข้อก่อนหน้า" data-icon="prevF"></button>
+    <button type="button" class="ib" id="prevS" title="ขั้นก่อนหน้า (←)" aria-label="ขั้นก่อนหน้า" data-icon="prevS"></button>
+    <button type="button" class="ib play" id="play" title="เล่น / หยุดชั่วคราว (เว้นวรรค)"><svg class="i" data-icon="play"></svg><span id="playText">เริ่ม</span></button>
+    <button type="button" class="ib" id="nextS" title="ขั้นถัดไป (→)" aria-label="ขั้นถัดไป" data-icon="nextS"></button>
+    <button type="button" class="ib" id="nextF" title="หัวข้อถัดไป (N)" aria-label="หัวข้อถัดไป" data-icon="nextF"></button>
+    <button type="button" class="ib" id="restart" title="เริ่มหัวข้อนี้ใหม่ (R)" aria-label="เริ่มหัวข้อนี้ใหม่" data-icon="restart"></button>
+    <span class="sep"></span>
+    <button type="button" class="btn" id="stepsBtn" title="ขั้นตอนในหัวข้อนี้ (S)"><svg class="i" data-icon="steps"></svg>ขั้นตอน</button>
+    <button type="button" class="ib" id="settingsBtn" title="ความเร็ว หยุดรอทุกขั้น ขนาด" aria-label="ตั้งค่าการเล่น" aria-pressed="true" data-icon="tune"></button>
+  </div>
+  <div class="settings">
+    <label>ความเร็ว <select id="speed"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option></select></label>
+    <label title="ระบบหยุดรอก่อนทำแต่ละขั้น กด เล่นต่อ หรือ → เพื่อไปต่อ"><input type="checkbox" id="hold"> หยุดรอทุกขั้น</label>
+    <span class="zoom" title="ขนาดของระบบบนจอ"><button type="button" class="ib" id="zoomOut" aria-label="เล็กลง">A−</button><span id="zoomVal">100%</span><button type="button" class="ib" id="zoomIn" aria-label="ใหญ่ขึ้น">A+</button></span>
+    <a id="videoLink" href="video.html">โหมดวิดีโอ</a>
+    <a id="try" href="app/" target="_blank" rel="noopener" title="เปิดระบบฝึกอบรมในแท็บใหม่ เลือกบทบาทได้โดยไม่ต้องใช้รหัสผ่าน">ลองใช้งานเอง ↗</a>
+  </div>
+</section>
+
+<div id="scrim" hidden></div>
+<aside class="drawer left" id="topics" aria-label="หัวข้อการฝึกอบรม" inert>
+  <header><h2>หัวข้อการฝึกอบรม</h2><button type="button" class="ib" data-close aria-label="ปิด" data-icon="close"></button></header>
+  <div class="body">
+    <div class="roles" id="roles" role="group" aria-label="กรองตามบทบาท"></div>
+    <nav id="topicList"></nav>
+    <p class="hint">ทุกหัวข้อใช้ข้อมูลสมมติ ระบบทำงานจริงบนหน้าจอนี้ แต่ละครั้งที่เล่นใช้ข้อมูลชุดของตัวเอง</p>
+  </div>
+</aside>
+<aside class="drawer right" id="steps" aria-label="ขั้นตอนในหัวข้อนี้" inert>
+  <header><h2>ขั้นตอน</h2><button type="button" class="ib" data-close aria-label="ปิด" data-icon="close"></button></header>
+  <div class="body">
+    <nav id="stepList"></nav>
+    <p class="hint">กดขั้นใดก็ได้เพื่อข้ามไปยังขั้นนั้น ขั้นที่ผ่านมาแล้ว ระบบจะทำซ้ำอย่างรวดเร็วจนถึงขั้นที่เลือก</p>
+  </div>
+</aside>
+<script type="module" src="player.js"></script>
+</body>
+</html>

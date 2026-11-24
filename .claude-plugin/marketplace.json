@@ -1,0 +1,12 @@
+{
+  "name": "devkit",
+  "owner": { "name": "devkit" },
+  "description": "Claude Code skills and a gold reference for building and running a web app project.",
+  "plugins": [
+    {
+      "name": "devkit",
+      "source": "./plugins/devkit",
+      "description": "new-project, checkpoint, watched-walk, playwright-cli and live-demo-site, with the gold reference they follow."
+    }
+  ]
+}

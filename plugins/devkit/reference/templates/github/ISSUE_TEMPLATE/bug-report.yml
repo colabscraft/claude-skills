@@ -1,0 +1,82 @@
+# Copy to .github/ISSUE_TEMPLATE/bug-report.yml and replace every <...>.
+name: "Bug report"
+description: "Something in <the app> does not work as it should"
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Three fields decide how fast this gets fixed: the page URL, the build and a screenshot.**
+        They let us open your exact screen, in your exact build.
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: "Priority"
+      options:
+        - "P0 - Blocker: I cannot continue"
+        - "P1 - High: needed for the next meeting or release"
+        - "P2 - Normal"
+        - "P3 - Low: nice to have"
+      default: 2
+    validations:
+      required: true
+
+  - type: input
+    id: page-url
+    attributes:
+      label: "Page URL"
+      description: "Copy the whole address bar on the screen where it happened."
+      placeholder: "https://<staging host>/<page>"
+    validations:
+      required: true
+
+  - type: input
+    id: build
+    attributes:
+      label: "Build"
+      description: "The version shown on the sign-in page or in About (version · commit · time)."
+      placeholder: "<app> 2026.1.0-beta12 · 5c1a2e1 · 2026-11-24 04:12 UTC"
+    validations:
+      required: true
+
+  - type: input
+    id: seat
+    attributes:
+      label: "Signed in as"
+      description: "The role you were using (not your password)."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: "Steps"
+      description: "Numbered, one action per line."
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual"
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: "Screenshot"
+      description: "Paste or drag an image here. Cover any personal data first."

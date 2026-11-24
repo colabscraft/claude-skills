@@ -1,0 +1,45 @@
+# Copy to .github/workflows/issue-close-guard.yml.
+#
+# The rule: whoever raised an issue closes it. The developer moves a finished
+# issue to "In review"; the reporter checks it and closes it, which moves the
+# card to Done. GitHub cannot express "only the author may close": anyone with
+# triage or write access can close anything. So a close by anyone else is
+# undone here, with a comment saying why.
+#
+# Escape hatch: the `force-close` label, for when you agree another way.
+# Without it, a disagreement over one issue could lock it in a reopen loop.
+name: Only the reporter closes their issue
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  reopen-unless-author:
+    if: >-
+      github.event.issue.user.login != github.event.sender.login &&
+      !contains(github.event.issue.labels.*.name, 'force-close')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reopen and explain
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUM: ${{ github.event.issue.number }}
+          AUTHOR: ${{ github.event.issue.user.login }}
+          CLOSER: ${{ github.event.sender.login }}
+        # printf, not a heredoc: a heredoc inside a YAML block scalar keeps its
+        # indentation, and leading spaces make GitHub render a code block.
+        run: |
+          set -euo pipefail
+          gh issue reopen "$NUM" -R "$REPO"
+          BODY=$(printf '%s\n' \
+            "@${AUTHOR} Reopened automatically: this was closed by @${CLOSER}, and an issue is closed by whoever raised it." \
+            "" \
+            "The work may well be finished. Please check it and close this when you are satisfied." \
+            "" \
+            "If you agreed to close it another way, add the \`force-close\` label and close it again.")
+          gh issue comment "$NUM" -R "$REPO" --body "$BODY"

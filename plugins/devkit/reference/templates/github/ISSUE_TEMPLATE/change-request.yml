@@ -1,0 +1,43 @@
+# Copy to .github/ISSUE_TEMPLATE/change-request.yml and replace every <...>.
+name: "Change request"
+description: "Ask for something new or different in <the app>"
+title: "[CR] "
+labels: ["change-request"]
+body:
+  - type: textarea
+    id: why
+    attributes:
+      label: "Why"
+      description: "The problem in your words: who is affected and what it costs them today."
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: "What should change"
+      description: "The behaviour you want, not the implementation."
+    validations:
+      required: true
+
+  - type: textarea
+    id: criteria
+    attributes:
+      label: "Acceptance criteria"
+      description: "One numbered line per thing we must show you working. The reply answers each line by its number."
+      placeholder: |
+        1. When I ..., I see ...
+        2. ...
+    validations:
+      required: true
+
+  - type: input
+    id: page-url
+    attributes:
+      label: "Page URL (if it is about an existing screen)"
+
+  - type: textarea
+    id: mockup
+    attributes:
+      label: "Mockup or example"
+      description: "A sketch, a screenshot or a document. Cover any personal data first."

@@ -1,0 +1,2 @@
+# Copy to .github/ISSUE_TEMPLATE/config.yml. Every issue then uses a template.
+blank_issues_enabled: false

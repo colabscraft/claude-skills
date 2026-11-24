@@ -1,0 +1,75 @@
+# DEMO_HOST - a live demo site (live-demo-site skill), until the training or
+# demo is over: teardown removes this file, its certificate, the services and
+# the demo database. Demo data only. Replace DEMO_HOST, the ports and the root.
+#
+#   /       the site: the live player (+ video mode), static
+#   /app/   the app's demo instance (serves its bundle and /api under /app)
+#   /idp/   the seat picker (a test issuer with one button per role)
+#
+# ONE SHARED SIGN-IN in front of all of it while it is under review, lifted
+# (`auth_basic off;` at server level) when the owner says so - except the seat
+# picker's server-to-server endpoints: the app calls discovery, the keys and
+# the token endpoint through this name with no browser credential. Every
+# location sends the no-index header. certbot adds the 443 server.
+server {
+    listen 80;
+    server_name DEMO_HOST;
+    root /var/www/DEMO_HOST;
+    index index.html;
+
+    gzip on;
+    gzip_vary on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    client_max_body_size 12m;
+
+    auth_basic "Demo";
+    auth_basic_user_file /etc/nginx/DEMO_HOST.htpasswd;
+
+    location ^~ /.well-known/acme-challenge/ { auth_basic off; allow all; }
+
+    # The app's back channel to the seat picker: no browser, so no shared sign-in.
+    location ~ ^/idp/(\.well-known/openid-configuration|jwks|token|userinfo)$ {
+        auth_basic off;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        rewrite ^/idp/(.*)$ /$1 break;
+        proxy_pass http://127.0.0.1:9910;
+        proxy_set_header Host $host;
+    }
+    # A plain prefix, NOT ^~: ^~ would stop nginx from trying the back-channel
+    # regex above, and the app would meet the shared sign-in.
+    location /idp/ {
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        rewrite ^/idp/(.*)$ /$1 break;
+        proxy_pass http://127.0.0.1:9910;
+        proxy_set_header Host $host;
+    }
+
+    # The app serves its bundle and /api under the mount; nothing strips /app.
+    location ^~ /app/ {
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        proxy_pass http://127.0.0.1:8805;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+    location = /app { return 301 /app/; }
+
+    location = /manifest.json {
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+    location ~* \.mp4$ {
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header Cache-Control "public, max-age=3600";
+        try_files $uri =404;
+    }
+    location / {
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ =404;
+    }
+}
